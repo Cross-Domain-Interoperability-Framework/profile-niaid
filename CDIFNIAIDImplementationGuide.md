@@ -10,6 +10,28 @@ cdifDiscovery is not composed, because about one portal record in six has no dis
 
 Records in this profile are made from the portal's API by the table-driven converter in [converters/NIAID](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID). Its [`cdifJSON-LD/`](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID/cdifJSON-LD) directory holds 140 converted portal records that validate against this profile.
 
+# Converting NIAID records to CDIF
+
+How the portal's JSON becomes CDIF JSON-LD is documented fully in the converter directory,
+**[converters/NIAID](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID)**:
+
+- **[README](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/NIAID/README.md)**:
+  harvesting from the portal API, running the converter, the profiles a converted record
+  claims, the sentinel values written for missing content, and validation results.
+- **[The mapping table](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/mappings/niaid-to-cdif.sssom.tsv)**
+  (SSSOM, with its [sidecar](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/mappings/niaid-to-cdif.sssom.yml)):
+  each NIAID property's CDIF target, row by row. The converter reads the table at run
+  time, so the table is the mapping.
+- **[AGENTS.md](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/NIAID/AGENTS.md)**:
+  how the table drives the converter (row precedence, shapers, rules that run when a
+  value is absent), and how to change the mapping.
+- **[cdifJSON-LD/README](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/NIAID/cdifJSON-LD/README.md)**:
+  the 140 converted example records, how they are validated, and the values the
+  converter repairs.
+
+This repository's `sourceNIAID/` and `examples/` hold 29 of those records, one from each
+repository the portal harvests, before and after conversion.
+
 # Conformance
 
 A resource conforms to the CDIF NIAID profile when its catalog record declares conformance to the profile identifier. The catalog record is carried on `schema:subjectOf` as a `dcat:CatalogRecord`:
