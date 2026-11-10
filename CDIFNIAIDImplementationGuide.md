@@ -176,7 +176,7 @@ one-element array to its value.
 | Property | Value | Meaning |
 |---|---|---|
 | `nde:date` | date | The portal's summary date for the record |
-| `nde:species` | [NIAID defined terms](#schemadefinedterm) | Species the dataset was collected from or is about |
+| `nde:species` | [NIAID defined terms](#schemadefinedterm) | Host organisms associated with the dataset, e.g. Homo sapiens (the NIAID Blueprint's host); the pathogen is in `schema:infectiousAgent` |
 | `nde:nctid` | text, `NCT` and eight digits | ClinicalTrials.gov identifier of the study |
 | `nde:citedBy` | text or [cited work](#schemacreativework) | Works that cite the dataset |
 | `nde:curatedBy` | [curator](#curator) | Who curated the record, and from which version of their catalog |
@@ -221,6 +221,12 @@ that carry an annotation. The portal annotates every term it attaches to a datas
 | `nde:originalName` | text | The text in the source record the term was matched from |
 | `nde:curatedBy` | [curator](#curator) | Who or what produced or checked the annotation, often software (PubTator, GPT-4o-mini, the Biothings API) |
 | `cdifniaid:commonName` | text | The common name of a taxon, e.g. Human |
+
+These annotations describe one record's use of the term (what text it was matched from,
+who checked it), so a term is a node of its own record, not the ontology term itself.
+It links to the ontology term with `schema:sameAs` `{"@id": ...}`, its IRI (for example
+`http://purl.obolibrary.org/obo/NCBITaxon_9606`). Giving the node the IRI as its `@id`
+would merge every record's annotations onto the one shared term.
 
 ## schema:MonetaryGrant
 
@@ -285,6 +291,19 @@ The value of `nde:sample` is a sample or a sample collection.
   for a sample. It has `schema:numberOfItems` (a `schema:QuantitativeValue`), and its
   samples in `schema:itemListElement` or `schema:aggregateElement`.
 
+# The NIAID Blueprint
+
+NIAID's *Blueprint for Including Digital Objects in the NIAID Data Ecosystem* (v2, 26
+September 2025) asks repositories for 17 schema.org-based elements on every dataset,
+with default identifiers and vocabularies. Its host is `nde:species` here, and its funder
+and grant are `schema:funding`. The profile's SHACL checks a record's root dataset for
+each element with an `sh:Warning`: a record learns what it lacks against the Blueprint
+without failing cdifNIAID, because CDIF does not require them all.
+
+The converter adds the Blueprint's default identifiers where it can by exact match: an
+SPDX identifier for a Creative Commons or SPDX license, a ROR id for a named funder, and
+an ISO 3166 code for a place named as a country.
+
 # Portal names that are not properties
 
 Some names in the portal's JSON have no property in this profile. The converter turns
@@ -302,6 +321,9 @@ them into CDIF constructs instead:
   whose description gives the rest (`nde:name: ...; nde:temporalType: ...`).
 - A place's `country` becomes its name, and its `locationType` the name term's
   `schema:about`.
+- The access levels Open, Restricted and Closed in `conditionsOfAccess` become
+  `schema:CreativeWork` links to the COAR access rights open access, restricted access
+  and metadata only access, named with the portal's word.
 
 The converter's [README](https://github.com/Cross-Domain-Interoperability-Framework/converters/blob/main/NIAID/README.md)
 covers these, and the sentinel values it writes where a record lacks something cdifCore
