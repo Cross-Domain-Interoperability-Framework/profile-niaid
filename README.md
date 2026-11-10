@@ -35,7 +35,7 @@ source register. Its conformance URI is **`https://w3id.org/cdif/niaid/1.0`**.
 - **[`examples/`](examples/)** has the same 29 converted to CDIF, with the same file
   names (`.jsonld`), by the
   [NIAID converter](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID)
-  at converters `1599f81`. Each one passes the JSON Schema and SHACL of every profile its
+  at converters `7d3c29d`. Each one passes the JSON Schema and SHACL of every profile its
   catalog record claims.
 - **`examples/exampleCDIFniaid.json`** is the profile's own example, synced from
   metadataBuildingBlocks.

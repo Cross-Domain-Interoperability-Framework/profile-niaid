@@ -400,6 +400,73 @@ cdifd:NiaidAnnotationShape a sh:NodeShape ;
             sh:severity sh:Violation ] ;
     sh:targetSubjectsOf <https://discovery.biothings.io/ns/nde/isCurated> .
 
+cdifd:NiaidBlueprintShape a sh:NodeShape ;
+    sh:property [ sh:message "NIAID Blueprint element citation: the Blueprint asks for citations of related works." ;
+            sh:minCount 1 ;
+            sh:path schema:citation ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element infectiousAgent: the Blueprint asks for infectious agents, by default from NCBITaxon." ;
+            sh:minCount 1 ;
+            sh:path schema:infectiousAgent ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element host: the Blueprint asks for host organisms (nde:species), by default from NCBITaxon." ;
+            sh:minCount 1 ;
+            sh:path <https://discovery.biothings.io/ns/nde/species> ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element healthCondition: the Blueprint asks for health conditions, by default from MONDO." ;
+            sh:minCount 1 ;
+            sh:path schema:healthCondition ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element conditionsOfAccess: the Blueprint asks for conditions of access." ;
+            sh:minCount 1 ;
+            sh:path schema:conditionsOfAccess ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element license: the Blueprint asks for a license, by default an SPDX license." ;
+            sh:minCount 1 ;
+            sh:path schema:license ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element spatialCoverage: the Blueprint asks for spatial coverage, by default ISO 3166 country codes." ;
+            sh:minCount 1 ;
+            sh:path schema:spatialCoverage ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element temporalCoverage: the Blueprint asks for temporal coverage (ISO 8601 start/end)." ;
+            sh:minCount 1 ;
+            sh:path schema:temporalCoverage ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element identifier: the Blueprint asks for a globally unique, persistent identifier, by default a resolvable DOI." ;
+            sh:minCount 1 ;
+            sh:path schema:identifier ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element name: the Blueprint asks for a title." ;
+            sh:minCount 1 ;
+            sh:path schema:name ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element description: the Blueprint asks for a description." ;
+            sh:minCount 1 ;
+            sh:path schema:description ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element dateCreated: the Blueprint asks for the date created (ISO 8601)." ;
+            sh:minCount 1 ;
+            sh:path schema:dateCreated ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element author: the Blueprint asks for authors, by default with ORCIDs." ;
+            sh:minCount 1 ;
+            sh:path schema:creator ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element funder and grant: the Blueprint asks for funding: a schema:MonetaryGrant with the grant number and its funder, by default with a ROR id." ;
+            sh:minCount 1 ;
+            sh:path schema:funding ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element measurementTechnique: the Blueprint asks for measurement techniques, by default from NCIT." ;
+            sh:minCount 1 ;
+            sh:path schema:measurementTechnique ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element distribution: the Blueprint asks for links to the data files." ;
+            sh:minCount 1 ;
+            sh:path schema:distribution ;
+            sh:severity sh:Warning ] ;
+    sh:targetSubjectsOf schema:subjectOf .
+
 cdifd:NiaidNctidShape a sh:NodeShape ;
     sh:property [ sh:message "nde:nctid must be a ClinicalTrials.gov id: NCT and eight digits." ;
             sh:path <https://discovery.biothings.io/ns/nde/nctid> ;
