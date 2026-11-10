@@ -14,7 +14,8 @@ source register. Its conformance URI is **`https://w3id.org/cdif/niaid/1.0`**.
 ## Specification
 
 - **[CDIFNIAIDImplementationGuide.md](CDIFNIAIDImplementationGuide.md)**: the
-  implementation guide (an auto-generated draft, with a hand-written introduction).
+  implementation guide: the namespaces, including `cdifniaid:`, and what the profile adds
+  to cdifCore, whose own properties are in the cdifCore guide.
 - **[cdifNIAIDStructuredSchema.json](cdifNIAIDStructuredSchema.json)**: the resolved
   JSON Schema (Draft 2020-12), generated from the source register.
 - **[niaidRules.shacl](niaidRules.shacl)**: self-contained SHACL shapes, merged from

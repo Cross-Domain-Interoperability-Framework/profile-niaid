@@ -10,14 +10,25 @@ Discovery Portal, and composes cdifCore with the niaidDataset block.
 
 - `cdifNIAIDStructuredSchema.json`: JSON Schema (generated)
 - `niaidRules.shacl`: merged SHACL shapes (generated)
-- `CDIFNIAIDImplementationGuide.md`: implementation guide (generated draft, hand-written introduction)
-- `examples/`: validated JSON-LD examples
+- `CDIFNIAIDImplementationGuide.md`: implementation guide (hand-written; covers only what cdifNIAID adds to cdifCore, and the namespaces)
+- `examples/`: validated JSON-LD examples: the profile's own `exampleCDIFniaid.json`
+  (synced) and 29 converted records (`.jsonld`)
+- `sourceNIAID/`: the 29 source records, as the NIAID portal's API returns them, one per
+  repository the portal harvests; `examples/<name>.jsonld` is the conversion of
+  `sourceNIAID/<name>.json`
 
 ## Synced files: do not hand-edit
 
 The schema, the SHACL and `examples/exampleCDIFniaid.json` are generated in
 metadataBuildingBlocks. Change the source there and re-sync with
 `python tools/sync_release_repos.py --apply --repo profile-niaid`, run from that repo.
+
+## Copied records: not synced
+
+`sourceNIAID/*.json` and `examples/*.jsonld` are copies from the converters repo
+(`NIAID/niaidExamples/` and `NIAID/cdifJSON-LD/`); the sync leaves them alone. Don't
+edit them by hand: when the converter changes, copy the same file names again from
+those directories, and keep the README's examples table in step.
 
 - Source profile: `metadataBuildingBlocks/_sources/profiles/cdifCompositeProfile/cdifNIAID/`.
 - NIAID blocks: `metadataBuildingBlocks/_sources/niaidProperties/`.
