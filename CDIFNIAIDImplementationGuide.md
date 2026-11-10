@@ -226,7 +226,9 @@ These annotations describe one record's use of the term (what text it was matche
 who checked it), so a term is a node of its own record, not the ontology term itself.
 It links to the ontology term with `schema:sameAs` `{"@id": ...}`, its IRI (for example
 `http://purl.obolibrary.org/obo/NCBITaxon_9606`). Giving the node the IRI as its `@id`
-would merge every record's annotations onto the one shared term.
+would merge every record's annotations onto the one shared term. An NCIT term links to
+both of NCIT's IRIs, OBO's (`http://purl.obolibrary.org/obo/NCIT_C16585`) and NCI's own
+(`http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C16585`).
 
 ## schema:MonetaryGrant
 
@@ -293,16 +295,19 @@ The value of `nde:sample` is a sample or a sample collection.
 
 # The NIAID Blueprint
 
-NIAID's *Blueprint for Including Digital Objects in the NIAID Data Ecosystem* (v2, 26
-September 2025) asks repositories for 17 schema.org-based elements on every dataset,
+NIAID's *[Blueprint for Including Digital Objects in the NIAID Data Ecosystem](https://doi.org/10.5281/zenodo.17161561)*
+(v2, 26 September 2025) asks repositories for 17 schema.org-based elements on every dataset,
 with default identifiers and vocabularies. Its host is `nde:species` here, and its funder
 and grant are `schema:funding`. The profile's SHACL checks a record's root dataset for
 each element with an `sh:Warning`: a record learns what it lacks against the Blueprint
 without failing cdifNIAID, because CDIF does not require them all.
 
 The converter adds the Blueprint's default identifiers where it can by exact match: an
-SPDX identifier for a Creative Commons or SPDX license, a ROR id for a named funder, and
-an ISO 3166 code for a place named as a country.
+SPDX identifier for a Creative Commons or SPDX license, a ROR id for a named funder or
+organization author, and an ISO 3166 code for a place named as a country. The converter
+can also write a record as an instance of GO FAIR US's CEDAR template for the Blueprint
+and report how complete it is; see
+[converters/NIAID/blueprintCEDAR](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID/blueprintCEDAR).
 
 # Portal names that are not properties
 
