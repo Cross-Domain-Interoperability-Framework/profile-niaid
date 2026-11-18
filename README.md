@@ -9,7 +9,7 @@ source register. Its conformance URI is **`https://w3id.org/cdif/niaid/1.0`**.
 > [NIAID Data Discovery Portal](https://data.niaid.nih.gov/). It composes cdifCore with
 > niaidDataset, which constrains the NIAID (`nde:`), Bioschemas (`bios:`) and
 > `cdifniaid:` properties those records carry. A record with discovery content claims
-> `https://w3id.org/cdif/discovery/1.1` as well, as its own `conformsTo` entry.
+> `https://w3id.org/cdif/discovery/2.0` as well, as its own `conformsTo` entry.
 
 ## Specification
 
@@ -35,7 +35,7 @@ source register. Its conformance URI is **`https://w3id.org/cdif/niaid/1.0`**.
 - **[`examples/`](examples/)** has the same 29 converted to CDIF, with the same file
   names (`.jsonld`), by the
   [NIAID converter](https://github.com/Cross-Domain-Interoperability-Framework/converters/tree/main/NIAID)
-  at converters `a31c997`. Each one passes the JSON Schema and SHACL of every profile its
+  at converters `56f777c`. Each one passes the JSON Schema and SHACL of every profile its
   catalog record claims.
 - **`examples/exampleCDIFniaid.json`** is the profile's own example, synced from
   metadataBuildingBlocks.
