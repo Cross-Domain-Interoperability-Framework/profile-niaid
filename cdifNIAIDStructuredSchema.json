@@ -431,6 +431,17 @@
                       "schema:termCode": {
                         "type": "string",
                         "description": "A representative code for this keyword in the controlled vocabulary. Analogous to skos:Notation"
+                      },
+                      "schema:about": {
+                        "description": "What this term is about, or the part it plays in the record, as EITHER a plain string OR an object reference ({\"@id\": \"<uri>\"}). schema.org lists schema:DefinedTerm in the domain of schema:about. In CDIF records it marks where a keyword came from when that is not the dataset's own description: for example 'DCATtheme' for a keyword taken from dcat:theme, or 'portal level value' for one that describes the source portal and not the dataset.",
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "$ref": "#/$defs/ObjectReference"
+                          }
+                        ]
                       }
                     },
                     "allOf": [
@@ -825,7 +836,7 @@
             "$ref": "#/$defs/Organization"
           },
           {
-            "description": "For more granularity on how a person contributed to a Dataset, use schema:Role. The schema.org documentation does not state that the Role type is an expected data type of author, creator and contributor, but that is addressed in this blog post (http://blog.schema.org/2014/06/introducing-role.html). see https://github.com/ESIPFed/science-on-schema.org/blob/develop/guides/Dataset.md#roles-of-people",
+            "description": "For more granularity on how a person contributed to a Dataset, use schema:Role. The schema.org documentation does not state that the Role type is an expected data type of author, creator and contributor, but that is addressed in this blog post (http://blog.schema.org/2014/06/introducing-role.html). see https://github.com/ESIPFed/science-on-schema.org/blob/develop/guides/Dataset.md#roles-of-people. The Role holds the agent under the property it sits under, as schema.org's Role pattern and validator.schema.org require -- schema:contributor inside a contributor Role, schema:agent inside an activity's agent Role, schema:participant inside a participant Role. At least one is required.",
             "type": "object",
             "properties": {
               "@type": {
@@ -845,24 +856,35 @@
                 "$ref": "#/$defs/cdifConceptOrTermOrString"
               },
               "schema:contributor": {
-                "anyOf": [
-                  {
-                    "$ref": "#/$defs/ObjectReference",
-                    "description": "IRI reference to a Person or Organization defined elsewhere"
-                  },
-                  {
-                    "$ref": "#/$defs/Person"
-                  },
-                  {
-                    "$ref": "#/$defs/Organization"
-                  }
-                ]
+                "$ref": "#/$defs/RoleFiller"
+              },
+              "schema:agent": {
+                "$ref": "#/$defs/RoleFiller"
+              },
+              "schema:participant": {
+                "$ref": "#/$defs/RoleFiller"
               }
             },
             "required": [
               "@type",
-              "schema:roleName",
-              "schema:contributor"
+              "schema:roleName"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "schema:contributor"
+                ]
+              },
+              {
+                "required": [
+                  "schema:agent"
+                ]
+              },
+              {
+                "required": [
+                  "schema:participant"
+                ]
+              }
             ]
           }
         ]
@@ -1171,7 +1193,8 @@
       "description": "Brief information about instruments, software or experimental protocols used",
       "type": "array",
       "items": {
-        "title": "very simple links or names of software or instruments used to generate a resource.",
+        "title": "Activity that generated the resource (CDIF core)",
+        "description": "The CDIF core definition of a prov:wasGeneratedBy value: a prov:Activity whose prov:used items are strings or @id references. Any further structure belongs to the profiles that extend it (cdifProvActivity for the schema.org implementation, provActivity for the PROV-O one), which may only narrow it.",
         "type": "object",
         "required": [
           "@type"
@@ -1185,91 +1208,27 @@
             "minItems": 1,
             "contains": {
               "const": "prov:Activity"
-            }
+            },
+            "description": "Must include prov:Activity. Stated as \"contains\" rather than a single value so an extending profile can add types (cdifProvActivity adds schema:Action)."
           },
           "prov:used": {
             "type": "array",
-            "description": "Entities the activity used. Per PROV-O each value denotes a prov:Entity. An item may be (1) a string URI or free-text reference, (2) an {@id} reference, (3) an inline entity object carrying an @type that includes prov:Entity plus a schema.org type for the kind of thing used, e.g. [\"prov:Entity\",\"schema:Thing\"] (instrument), [\"prov:Entity\",\"schema:CreativeWork\"] (method/protocol), or [\"prov:Entity\",\"schema:SoftwareApplication\"] (software), or (4) a role-keyed wrapper naming what was used through one of the recognized \"used\" relations (schema:instrument, bios:computationalTool, bios:reagent), or (5) a role-keyed wrapper under a role a consuming profile defines for itself, admitted by shape rather than by name. Base leaves the wrapped value loose; profiles/extensions (e.g. cdifProvActivity, adaProduct) pin its shape (Instrument, ComputationalTool, Reagent, ...) and close the set of role names they accept.",
+            "description": "Entities the activity used. Optional. Each item is a string (an IRI or a free-text name) or an object that identifies the entity by @id. The @id reference is deliberately NOT sealed: an extending profile may describe the entity in place as long as it keeps the @id, and a profile that wants only bare references can seal it itself. Role-keyed wrappers (an object whose key names a role, with no @id) are not accepted; in the schema.org implementation what an activity used is recorded with schema:instrument and schema:object instead.",
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
-                },
-                {
-                  "$ref": "#/$defs/ObjectReference",
-                  "description": "a resolvable reference to a representation of the software or instrument used"
+                  "type": "string",
+                  "description": "an IRI or a free-text name of the entity used"
                 },
                 {
                   "type": "object",
-                  "description": "an inline prov:Entity used by the activity (see prov:used description)",
+                  "description": "an entity used, identified by @id; it may also be described in place",
+                  "required": [
+                    "@id"
+                  ],
                   "properties": {
-                    "@type": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "minItems": 1,
-                      "contains": {
-                        "const": "prov:Entity"
-                      }
-                    }
-                  },
-                  "required": [
-                    "@type"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "description": "a role-keyed wrapper naming an instrument used by the activity; the extension layer pins the value to an Instrument description.",
-                  "required": [
-                    "schema:instrument"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "description": "a role-keyed wrapper naming a computational tool (software) used; the extension layer pins the value to a ComputationalTool description.",
-                  "required": [
-                    "bios:computationalTool"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "description": "a role-keyed wrapper naming a reagent / material used; the extension layer pins the value to a Reagent description.",
-                  "required": [
-                    "bios:reagent"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "description": "a role-keyed wrapper under a role name this layer does not recognize: an object carrying at least one prefixed-name (CURIE) property other than @id / @type, whose value is an {@id} reference, an inline description, or an array of either. CDIF deliberately does NOT enumerate profile-defined roles here: the three named above (schema:instrument, bios:computationalTool, bios:reagent) are in CDIF/bioschemas scope and stay explicit, while a domain profile is free to relate an activity to what it used through a role of its own without CDIF having to know the term. A consuming profile is expected to CLOSE the set to the roles it defines, so this branch is permissive BY DESIGN at the base layer and the restriction returns at the profile layer. allOf composes correctly in that direction -- base permissive, profile restrictive -- because an allOf intersection can only narrow: a role this layer admits by shape is still rejected by any profile that does not name it.",
-                  "minProperties": 1,
-                  "propertyNames": {
-                    "pattern": "^(@id|@type|[A-Za-z][A-Za-z0-9_.-]*:[A-Za-z_][A-Za-z0-9_.-]*)$"
-                  },
-                  "not": {
-                    "description": "@id / @type alone is the plain {@id} reference branch, not a wrapper; at least one property here must be a role.",
-                    "propertyNames": {
-                      "enum": [
-                        "@id",
-                        "@type"
-                      ]
-                    }
-                  },
-                  "patternProperties": {
-                    "^[A-Za-z][A-Za-z0-9_.-]*:[A-Za-z_][A-Za-z0-9_.-]*$": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "description": "an {@id} reference to, or an inline description of, the entity used in this role"
-                        },
-                        {
-                          "type": "array",
-                          "minItems": 1,
-                          "items": {
-                            "type": "object"
-                          }
-                        }
-                      ]
+                    "@id": {
+                      "type": "string"
                     }
                   }
                 }
@@ -1365,7 +1324,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "@id": {
-                    "const": "https://w3id.org/cdif/core/1.1"
+                    "const": "https://w3id.org/cdif/core/2.0"
                   }
                 }
               }
@@ -1567,7 +1526,7 @@
     },
     "nde:species": {
       "$ref": "#/$defs/terms",
-      "description": "Species the dataset was collected from or is about."
+      "description": "Host organisms associated with the dataset, e.g. Homo sapiens (the NIAID Blueprint's host); the pathogen is in schema:infectiousAgent."
     },
     "schema:infectiousAgent": {
       "$ref": "#/$defs/terms",
@@ -2041,6 +2000,17 @@
                 "schema:termCode": {
                   "type": "string",
                   "description": "A representative code for this keyword in the controlled vocabulary. Analogous to skos:Notation"
+                },
+                "schema:about": {
+                  "description": "What this term is about, or the part it plays in the record, as EITHER a plain string OR an object reference ({\"@id\": \"<uri>\"}). schema.org lists schema:DefinedTerm in the domain of schema:about. In CDIF records it marks where a keyword came from when that is not the dataset's own description: for example 'DCATtheme' for a keyword taken from dcat:theme, or 'portal level value' for one that describes the source portal and not the dataset.",
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/$defs/ObjectReference"
+                    }
+                  ]
                 }
               },
               "allOf": [
@@ -3054,6 +3024,54 @@
             }
           ]
         },
+        "skos:altLabel": {
+          "description": "Alternative lexical labels (acronyms, abbreviations, spelling variants).",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/LanguageTaggedValue"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/LanguageTaggedValue"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "skos:hiddenLabel": {
+          "description": "Labels accessible to free-text search but not displayed.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/LanguageTaggedValue"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/LanguageTaggedValue"
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "skos:notation": {
           "description": "Classification code for this concept within a scheme (a single notation string, consistent with CdifCodelistConcept).",
           "type": "string"
@@ -3202,6 +3220,30 @@
             }
           ]
         },
+        "skos:example": {
+          "description": "Example of the use of this concept.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/LanguageTaggedValue"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/LanguageTaggedValue"
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "skos:inScheme": {
           "description": "Concept scheme(s) this concept belongs to.",
           "anyOf": [
@@ -3257,6 +3299,90 @@
               }
             ]
           }
+        },
+        "skos:related": {
+          "description": "Associative (non-hierarchical) relations. Items are inline concept objects or @id references. Shaped like skos:broader/skos:narrower for consistency within this block. SKOS integrity condition S27 makes skos:related disjoint with the transitive closure of skos:broader; that is a graph-level constraint no JSON Schema can express, and rules.shacl does not yet assert it (it asserts only the reflexive skos:broader case).",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ObjectReference"
+              },
+              {
+                "$ref": "#/$defs/Concept"
+              }
+            ]
+          }
+        },
+        "skos:exactMatch": {
+          "description": "Concepts in other schemes with equivalent meaning, by @id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ObjectReference"
+              }
+            }
+          ]
+        },
+        "skos:closeMatch": {
+          "description": "Concepts in other schemes with sufficiently similar meaning to be interchangeable in some applications, by @id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ObjectReference"
+              }
+            }
+          ]
+        },
+        "skos:broadMatch": {
+          "description": "Broader concepts in other schemes, by @id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ObjectReference"
+              }
+            }
+          ]
+        },
+        "skos:narrowMatch": {
+          "description": "Narrower concepts in other schemes, by @id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ObjectReference"
+              }
+            }
+          ]
+        },
+        "skos:relatedMatch": {
+          "description": "Associatively related concepts in other schemes, by @id.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ObjectReference"
+              }
+            }
+          ]
         }
       },
       "required": [
@@ -3264,6 +3390,21 @@
         "skos:prefLabel",
         "skos:definition",
         "skos:inScheme"
+      ]
+    },
+    "RoleFiller": {
+      "description": "The Person or Organization in this role.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ObjectReference",
+          "description": "IRI reference to a Person or Organization defined elsewhere"
+        },
+        {
+          "$ref": "#/$defs/Person"
+        },
+        {
+          "$ref": "#/$defs/Organization"
+        }
       ]
     },
     "BioschemasSample_termsOrText": {

@@ -116,7 +116,14 @@ cdifd:CDIFDataDownloadShape a sh:NodeShape ;
             sh:minCount 1 ;
             sh:path schema:contentUrl ;
             sh:pattern "^[a-zA-Z][a-zA-Z0-9+.-]*:[^\\s]*$" ] ;
-    sh:targetClass schema:DataDownload .
+    sh:target [ a sh:SPARQLTarget ;
+            sh:select """
+            PREFIX schema: <http://schema.org/>
+            SELECT ?this WHERE {
+                ?this a schema:DataDownload .
+                FILTER NOT EXISTS { ?action schema:result ?this }
+            }
+        """ ] .
 
 cdifd:CDIFDatasetMandatoryShape a sh:NodeShape ;
     sh:message "A Dataset must have an @id that is a URI (IRI)" ;
@@ -152,6 +159,8 @@ cdifd:CDIFDatasetMandatoryShape a sh:NodeShape ;
               # never the object, so this never excludes the documented dataset.
               FILTER NOT EXISTS { ?dpd prov:wasDerivedFrom ?this . }
               FILTER NOT EXISTS { ?dpu prov:used ?this . }
+              FILTER NOT EXISTS { ?dpo schema:object ?this . }
+              FILTER NOT EXISTS { ?dpi schema:instrument ?this . }
               FILTER NOT EXISTS { ?dib schema:isBasedOn ?this . }
               FILTER NOT EXISTS { ?dsrc dcterms:source ?this . }
               # Exclude datasets that are MEMBERS OF A DISTRIBUTION -- files
@@ -299,10 +308,11 @@ cdifd:CDIFIdentifierTypeTermShape a sh:NodeShape ;
 
 cdifd:CDIFLabeledLinkShape a sh:NodeShape ;
     sh:property [ sh:datatype xsd:string ;
-            sh:message "schema:url must be an http(s), ftp(s), sftp, s3 or gs URL. Whether it resolves is not tested." ;
+            sh:message "A schema:CreativeWork should have a schema:url, an http(s), ftp(s), sftp, s3 or gs URL. Whether it resolves is not tested." ;
             sh:minCount 1 ;
             sh:path schema:url ;
-            sh:pattern "^(https?|ftps?|sftp|s3|gs)://[^\\s]+$" ] ;
+            sh:pattern "^(https?|ftps?|sftp|s3|gs)://[^\\s]+$" ;
+            sh:severity sh:Warning ] ;
     sh:targetClass schema:CreativeWork .
 
 cdifd:CDIFLinkRoleShape a sh:NodeShape ;
@@ -319,25 +329,25 @@ cdifd:CDIFLinkRoleShape a sh:NodeShape ;
     sh:targetClass schema:LinkRole .
 
 cdifd:CDIFOrganizationShape a sh:NodeShape ;
-    sh:message "Organization must have an @id IRI, a name or an identifier that is a string" ;
-    sh:or ( [ sh:nodeKind sh:IRI ] [ sh:property cdifd:nameProperty ] [ sh:property [ sh:message "an organization should have an identifier that is a URI; use of ORCID is strongly encouraged" ;
+    sh:message "Organization must have an @id IRI, a non-empty schema:name, or an identifier that is a string. A name that is present but empty does not satisfy this." ;
+    sh:or ( [ sh:nodeKind sh:IRI ] [ sh:property cdifd:organizationNameProperty ] [ sh:property [ sh:message "an organization should have an identifier that is a URI; use of ORCID is strongly encouraged" ;
                         sh:minCount 1 ;
                         sh:nodeKind sh:IRIOrLiteral ;
                         sh:path schema:identifier ] ] ) ;
     sh:targetClass schema:Organization .
 
 cdifd:CDIFPersonShape a sh:NodeShape ;
-    sh:message "A person must have a name or an identifier provided; affiliation to an organization is recommended." ;
+    sh:message "A person must have a non-empty schema:name or an identifier; a name that is present but empty does not satisfy this. Affiliation to an organization is recommended." ;
     sh:or ( [ sh:property [ sh:message "a person should have an identifier that is a URI; use of ORCID is strongly encouraged" ;
                         sh:minCount 1 ;
                         sh:nodeKind sh:IRIOrLiteral ;
-                        sh:path schema:identifier ] ] [ sh:property cdifd:nameProperty ] ) ;
+                        sh:path schema:identifier ] ] [ sh:property cdifd:personNameProperty ] ) ;
     sh:property cdifd:affiliationProperty,
         cdifd:contactPointProperty ;
     sh:targetClass schema:Person .
 
 cdifd:CDIFRelationShape a sh:NodeShape ;
-    sh:message "On a dcat:Relationship, dcterms:relation names the related resource and dcat:hadRole (a skos:Concept) classifies the relation. A Relationship that also declares schema:CreativeWork is a labeled link as well, and CDIFLabeledLinkShape requires its schema:url." ;
+    sh:message "On a dcat:Relationship, dcterms:relation names the related resource and dcat:hadRole (a skos:Concept) classifies the relation. A Relationship that also declares schema:CreativeWork is a labeled link as well, and CDIFLabeledLinkShape asks for its schema:url." ;
     sh:property [ a sh:PropertyShape ;
             sh:maxCount 1 ;
             sh:message "dcterms:relation must be an @id reference to the related resource (recommended) or a URI-shaped string. DCMI recommends the URI form and permits the string form." ;
@@ -361,13 +371,16 @@ cdifd:CDIFRelationShape a sh:NodeShape ;
     sh:targetClass dcat:Relationship .
 
 cdifd:CDIFRoleShape a sh:NodeShape ;
-    sh:message "The schema.org construct for assigining a role to a contributor nests a second schema:contributor node inside a schema:contributor node." ;
-    sh:property [ sh:description "https://cross-domain-interoperability-framework.github.io/cdifbook/metadata/schemaorgimplementation.html" ;
-            sh:message "a Role must be filled by a Person, Organization, or IRI reference to one" ;
-            sh:minCount 1 ;
-            sh:or ( [ sh:class schema:Person ] [ sh:class schema:Organization ] [ sh:nodeKind sh:IRI ] ) ;
-            sh:path schema:contributor ],
-        cdifd:roleNameProperty ;
+    sh:description "https://cross-domain-interoperability-framework.github.io/cdifbook/metadata/schemaorgimplementation.html" ;
+    sh:message "a Role must be filled by a Person, Organization, or IRI reference to one, under schema:contributor, schema:agent or schema:participant (the property the Role sits under)" ;
+    sh:or ( [ sh:property [ sh:minCount 1 ;
+                        sh:or ( [ sh:class schema:Person ] [ sh:class schema:Organization ] [ sh:nodeKind sh:IRI ] ) ;
+                        sh:path schema:contributor ] ] [ sh:property [ sh:minCount 1 ;
+                        sh:or ( [ sh:class schema:Person ] [ sh:class schema:Organization ] [ sh:nodeKind sh:IRI ] ) ;
+                        sh:path schema:agent ] ] [ sh:property [ sh:minCount 1 ;
+                        sh:or ( [ sh:class schema:Person ] [ sh:class schema:Organization ] [ sh:nodeKind sh:IRI ] ) ;
+                        sh:path schema:participant ] ] ) ;
+    sh:property cdifd:roleNameProperty ;
     sh:targetClass schema:Role .
 
 cdifd:CDIFSubjectOfPlacementShape a sh:NodeShape ;
@@ -400,12 +413,94 @@ cdifd:NiaidAnnotationShape a sh:NodeShape ;
             sh:severity sh:Violation ] ;
     sh:targetSubjectsOf <https://discovery.biothings.io/ns/nde/isCurated> .
 
+cdifd:NiaidBlueprintShape a sh:NodeShape ;
+    sh:property [ sh:message "NIAID Blueprint element citation: the Blueprint asks for citations of related works." ;
+            sh:minCount 1 ;
+            sh:path schema:citation ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element infectiousAgent: the Blueprint asks for infectious agents, by default from NCBITaxon." ;
+            sh:minCount 1 ;
+            sh:path schema:infectiousAgent ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element host: the Blueprint asks for host organisms (nde:species), by default from NCBITaxon." ;
+            sh:minCount 1 ;
+            sh:path <https://discovery.biothings.io/ns/nde/species> ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element healthCondition: the Blueprint asks for health conditions, by default from MONDO." ;
+            sh:minCount 1 ;
+            sh:path schema:healthCondition ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element conditionsOfAccess: the Blueprint asks for conditions of access." ;
+            sh:minCount 1 ;
+            sh:path schema:conditionsOfAccess ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element license: the Blueprint asks for a license, by default an SPDX license." ;
+            sh:minCount 1 ;
+            sh:path schema:license ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element spatialCoverage: the Blueprint asks for spatial coverage, by default ISO 3166 country codes." ;
+            sh:minCount 1 ;
+            sh:path schema:spatialCoverage ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element temporalCoverage: the Blueprint asks for temporal coverage (ISO 8601 start/end)." ;
+            sh:minCount 1 ;
+            sh:path schema:temporalCoverage ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element identifier: the Blueprint asks for a globally unique, persistent identifier, by default a resolvable DOI." ;
+            sh:minCount 1 ;
+            sh:path schema:identifier ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element name: the Blueprint asks for a title." ;
+            sh:minCount 1 ;
+            sh:path schema:name ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element description: the Blueprint asks for a description." ;
+            sh:minCount 1 ;
+            sh:path schema:description ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element dateCreated: the Blueprint asks for the date created (ISO 8601)." ;
+            sh:minCount 1 ;
+            sh:path schema:dateCreated ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element author: the Blueprint asks for authors, by default with ORCIDs." ;
+            sh:minCount 1 ;
+            sh:path schema:creator ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element funder and grant: the Blueprint asks for funding: a schema:MonetaryGrant with the grant number and its funder, by default with a ROR id." ;
+            sh:minCount 1 ;
+            sh:path schema:funding ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element measurementTechnique: the Blueprint asks for measurement techniques, by default from NCIT." ;
+            sh:minCount 1 ;
+            sh:path schema:measurementTechnique ;
+            sh:severity sh:Warning ],
+        [ sh:message "NIAID Blueprint element distribution: the Blueprint asks for links to the data files." ;
+            sh:minCount 1 ;
+            sh:path schema:distribution ;
+            sh:severity sh:Warning ] ;
+    sh:targetSubjectsOf schema:subjectOf .
+
 cdifd:NiaidNctidShape a sh:NodeShape ;
     sh:property [ sh:message "nde:nctid must be a ClinicalTrials.gov id: NCT and eight digits." ;
             sh:path <https://discovery.biothings.io/ns/nde/nctid> ;
             sh:pattern "^NCT[0-9]{8}$" ;
             sh:severity sh:Violation ] ;
     sh:targetSubjectsOf <https://discovery.biothings.io/ns/nde/nctid> .
+
+cdifd:agentInRoleDefinedTermShape a sh:NodeShape ;
+    sh:message "A DefinedTerm must have either a non-empty schema:name or a schema:identifier -- ideally both. A schema:name that is present but empty does not satisfy this." ;
+    sh:or ( [ sh:property [ sh:message "a defined term should have an identifier that is a resolvable URI" ;
+                        sh:minCount 1 ;
+                        sh:or ( [ sh:datatype xsd:string ] [ sh:and ( [ sh:class schema:PropertyValue ] [ sh:or ( [ sh:property [ sh:datatype xsd:string ;
+                                                                    sh:message "a value for the identifier should be provided; can provide either full URI or identifier token part of URI if a url is provided." ;
+                                                                    sh:minCount 1 ;
+                                                                    sh:path schema:value ] ] [ sh:property [ sh:datatype xsd:string ;
+                                                                    sh:message "value must be a resolvable URL, but we aren't testing to see if the URL resolves..... Can't get xsd:anyURI to work with JSON Schema validation..." ;
+                                                                    sh:minCount 1 ;
+                                                                    sh:path schema:url ;
+                                                                    sh:pattern "^https?:\\/\\/[^\\s]+$" ] ] ) ] ) ] ) ;
+                        sh:path schema:identifier ] ] [ sh:property cdifd:termLabelProperty ] ) ;
+    sh:targetClass schema:DefinedTerm .
 
 cdifd:derivedFromProperty a sh:NodeShape ;
     sh:filterShape [ sh:nodeKind sh:BlankNode ] ;
@@ -438,10 +533,9 @@ cdifd:fundingShape a sh:NodeShape ;
     sh:targetClass schema:MonetaryGrant .
 
 cdifd:generatedByNode a sh:NodeShape ;
-    sh:property [ sh:message "The generatedBy Activity should specify at least one resource that was used" ;
-            sh:minCount 1 ;
-            sh:or ( [ sh:nodeKind sh:IRI ] [ sh:nodeKind sh:BlankNode ] [ sh:datatype xsd:string ;
-                        sh:minLength 3 ] ) ;
+    sh:property [ sh:message "A prov:used value should be an IRI (an @id reference) or a non-empty string" ;
+            sh:or ( [ sh:nodeKind sh:IRI ] [ sh:datatype xsd:string ;
+                        sh:minLength 1 ] ) ;
             sh:path prov:used ;
             sh:severity sh:Warning ] ;
     sh:target [ a sh:SPARQLTarget ;
@@ -482,7 +576,7 @@ cdifd:webAPINode a sh:NodeShape ;
     sh:property [ sh:message "A WebAPI node must specify a service type with a string, IRI, or DefinedTerm" ;
             sh:minCount 1 ;
             sh:or ( [ sh:nodeKind sh:IRI ] [ sh:class schema:DefinedTerm ] [ sh:datatype xsd:string ;
-                        sh:minLength 3 ] ) ;
+                        sh:minLength 1 ] ) ;
             sh:path schema:serviceType ],
         [ sh:message "A WebAPI must specify terms of service (schema:termsOfService) as a string, IRI, or CreativeWork." ;
             sh:minCount 1 ;
@@ -576,9 +670,9 @@ cdifd:descriptionProperty a sh:PropertyShape ;
 
 cdifd:grantNameProperty a sh:PropertyShape ;
     sh:datatype xsd:string ;
-    sh:message "a title for the grant must be provided, and have a length of at least 3 characters." ;
+    sh:message "a title for the grant must be provided, and must not be empty." ;
     sh:minCount 1 ;
-    sh:minLength 3 ;
+    sh:minLength 1 ;
     sh:path schema:name .
 
 cdifd:keywordsProperty a sh:PropertyShape ;
@@ -594,8 +688,8 @@ cdifd:metadataConformsToPresent a sh:PropertyShape ;
     sh:path dcterms:conformsTo .
 
 cdifd:metadataProfileProperty a sh:PropertyShape ;
-    sh:hasValue <https://w3id.org/cdif/core/1.1> ;
-    sh:message "provide identifiers for specifications used in this record to provide guidance for machine agents processing the metadata record" ;
+    sh:hasValue <https://w3id.org/cdif/core/2.0> ;
+    sh:message "a catalog record must declare conformance to https://w3id.org/cdif/core/2.0, and should list any further specifications it follows, to guide machine agents processing the metadata record" ;
     sh:minCount 1 ;
     sh:nodeKind sh:IRI ;
     sh:path dcterms:conformsTo ;
@@ -606,6 +700,27 @@ cdifd:metadataSubjectProperty a sh:PropertyShape ;
     sh:minCount 1 ;
     sh:nodeKind sh:IRI ;
     sh:path schema:about .
+
+cdifd:nameProperty a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:message "a name for the dataset must be provided, and must not be empty." ;
+    sh:minCount 1 ;
+    sh:minLength 1 ;
+    sh:path schema:name .
+
+cdifd:organizationNameProperty a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:message "a label (schema:name) for the Organization must be provided, and must not be empty" ;
+    sh:minCount 1 ;
+    sh:minLength 1 ;
+    sh:path schema:name .
+
+cdifd:personNameProperty a sh:PropertyShape ;
+    sh:datatype xsd:string ;
+    sh:message "a name for the person must be provided, and must not be empty." ;
+    sh:minCount 1 ;
+    sh:minLength 1 ;
+    sh:path schema:name .
 
 cdifd:resourceIdentifierProperty a sh:PropertyShape ;
     sh:message "An identifier for the documented resource must be provided" ;
@@ -639,22 +754,15 @@ cdifd:roleNameProperty a sh:PropertyShape ;
     sh:or ( [ sh:datatype xsd:string ] [ sh:class schema:DefinedTerm ] ) ;
     sh:path schema:roleName .
 
-cdifd:termLabelProperty a sh:PropertyShape ;
-    sh:datatype xsd:string ;
-    sh:message "a label (schema:name) for the term must be provided, and must have at least 3 characters" ;
-    sh:minCount 1 ;
-    sh:minLength 3 ;
-    sh:path schema:name .
-
 <https://cdif.org/validation/0.1/skos#conceptPrefLabelProperty> a sh:PropertyShape ;
     sh:message "Every skos:Concept must have at least one skos:prefLabel." ;
     sh:minCount 1 ;
     sh:path skos:prefLabel .
 
-cdifd:nameProperty a sh:PropertyShape ;
+cdifd:termLabelProperty a sh:PropertyShape ;
     sh:datatype xsd:string ;
-    sh:message "a name for the dataset must be provided, and have a length of at least 3 characters." ;
+    sh:message "a label (schema:name) for the term must be provided, and must not be empty" ;
     sh:minCount 1 ;
-    sh:minLength 3 ;
+    sh:minLength 1 ;
     sh:path schema:name .
 
